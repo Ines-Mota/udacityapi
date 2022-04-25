@@ -1,0 +1,116 @@
+<html>
+    <head>
+        <title>Todo App</title>
+        <style>
+            .hidden {
+                display: none;
+            }
+            ul {
+                list-style: none;
+                padding: 0;
+                margin: 0;
+                width: 150px;
+            }
+            li {
+                clear: both;
+            }
+            li button {
+                -webkit-appearance: none;
+                border: none;
+                outline: none;
+                color: red;
+                float: right;
+                cursor: pointer;
+                font-size: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <!--submit data with html forms-->
+        <form id="form" action="/todo/create" method="post">
+            <div>
+                <label for="name"> Create a To-Do Item </label>
+                <input type="text" id="description">
+            </div>
+            <div>
+                <input type="submit" value="Create" />
+            </div>
+        </form>
+
+    </form>
+    <div id='error' class='hidden'>Something went wrong!</div>
+    <ul id='todo' >
+      {% for d in data %}
+      <li><input class = "check-completed" data-id= "{{d.id}}" type ="checkbox" {% if d.completed %} checked {% endif %}/> 
+        {{d.description }}
+        <button class = "delete-task" data-id = "{{d.id}}"> &cross;</button>
+</li>
+      {% endfor %}
+    </ul>
+    <script>
+        const deleteTasks = document.querySelectorAll('.delete-task');
+        for (let i = 0; i < deleteTasks.length; i++) {
+            const deleteTask = deleteTasks[i];
+            deleteTask.onclick = function(e) {
+                const todoId = e.target.dataset['id'];
+                fetch('/todo/' + todoId, {
+                    method: 'DELETE',
+                    })
+                }
+            }
+
+
+        const checkboxes = document.querySelectorAll('.check-completed');
+        for (let i = 0; i < checkboxes.length; i++) {
+           const checkbox = checkboxes[i];
+           checkbox.onchange = function(e) {
+               console.log('event', e);
+               const newCompleted = e.target.checked;
+               const todoId = e.target.dataset['id'];
+               fetch('/todo/' + todoId + '/set-completed', {
+                   method: 'POST',
+                   body: JSON.stringify({
+                       'completed': newCompleted
+                   }),
+                   headers: {
+                       'Content-Type': 'application/json'
+                   }
+                 })
+                   .then(function() {
+                       document.getElementById('error').className = 'hidden';
+                   })
+                   .catch(function() {
+                    document.getElementById('error').className='';
+                })
+               }
+           }
+        
+        document.getElementById('form').onsubmit = function(e) {
+            e.preventDefault();
+            fetch('/todo/create', {
+                method: 'POST',
+                body: JSON.stringify({
+                    'description': document.getElementById('description').value
+                }),
+                headers: {
+                    'Content-Type':'application/json'
+                }
+            })
+                .then(function(response) {
+                return response.json();
+            })
+                .then(function(jsonResponse) {
+                console.log(jsonResponse); 
+                const liItem = document.createElement('LI');
+                liItem.innerHTML = jsonResponse['description'];
+                document.getElementById('todo').appendChild(liItem);
+                document.getElementById('error').className ='hidden'
+            })
+                .catch(function() {
+                    document.getElementById('error').className='';
+                })
+        }
+    </script>
+
+    </body>
+</html>
